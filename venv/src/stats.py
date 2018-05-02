@@ -2,6 +2,8 @@ import datetime
 import time
 import pymongo
 import sys
+import requests
+
 
 client = pymongo.MongoClient('localhost', 27017)
 db = client.stocks
@@ -13,11 +15,13 @@ def get_quote(func, symbol):
     if func is 'TIME_SERIES_DAILY':
         middle = ''
     elif func is 'RSI':
-        middle = 'interval=daily&time_period=14&series_type=close'
+        middle = 'interval=15min&time_period=14&series_type=close'
     elif func is 'MACD':
-        middle = 'interval=daily&series_type=close&fastperiod=10'
+        middle = 'interval=15min&series_type=close&fastperiod=10'
     elif func is 'CCI':
-        middle = 'interval=daily&time_period=20'
+        middle = 'interval=15min&time_period=20'
+    elif func is 'TIME_SERIES_INTRADAY':
+        middle = 'interval=15min'
     else:
         middle = ''
     api_key = 'U2ODY5RRZ9315QET'
@@ -65,5 +69,7 @@ for stock_values in collection:
 
 for stock in stock_list:
     print(stock)
+    var = get_quote('TIME_SERIES_INTRADAY', stock)
+    print(var)
     break
 
