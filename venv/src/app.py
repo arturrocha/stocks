@@ -114,7 +114,7 @@ for stock in list:
     except Exception as e:
         last_valid_date = False
         stock_info_size = 1
-        print(e)
+        print('update stock info, error = {}'.format(e))
     if stock_info_size < 9:
         last_valid_date = False
     # request control
