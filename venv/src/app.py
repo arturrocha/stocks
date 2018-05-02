@@ -159,5 +159,6 @@ while True:
 	total_run = end - start
 	print('total run = {}'.format(total_run))
 	print('avg = {}'.format((total_run / count) / 3))
+	print(end)
 	time.sleep(60*60)
 
