@@ -43,6 +43,8 @@ def get_quote(func, symbol):
         request_status = [info for info in db.requests.find({'id': 1})][0]
     time_now = time.time()
     db.requests.update({'id': 1}, {'status': 'running', 'id': 1, 'timestamp': time_now}, upsert=True)
+    link = '{0}function={1}&symbol={2}&{3}&apikey={4}'.format(site, func, symbol, middle, api_key)
+    print(link)
     result = requests.get('{0}function={1}&symbol={2}&{3}&apikey={4}'.format(site, func, symbol, middle, api_key))
     time_now = time.time()
     db.requests.update({'id': 1}, {'status': 'stopped', 'id': 1, 'timestamp': time_now}, upsert=True)
@@ -69,7 +71,10 @@ for stock_values in collection:
 
 for stock in stock_list:
     print(stock)
-    var = get_quote('TIME_SERIES_INTRADAY', stock)
-    print(var)
+    intraday = get_quote('TIME_SERIES_INTRADAY', stock)
+    #rsi = get_quote('RSI', stock)
+    #cci = get_quote('CCI', stock)
+    #macd = get_quote('MACD', stock)
+    print(intraday)
     break
 
