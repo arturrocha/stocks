@@ -89,7 +89,10 @@ def get_quote(func, symbol):
     time_now = time.time()
     db.requests.update({'id': 1}, {'status': 'stopped', 'id': 1, 'timestamp': time_now}, upsert=True)
     # print(result.json())
-    return result.json()
+    try:
+		    return result.json()
+    except:
+        return False
 
 list = []
 with open('stocks.txt') as f:
@@ -105,6 +108,7 @@ while True:
 	data = {}
 	for stock in list:
 			data['symbol'] = stock
+			print(stock)
 			try:
 					stock_info = [data_ for data_ in db.values.find({'symbol': stock})][0]
 					last_valid_date = stock_info['valid_date']
@@ -130,6 +134,11 @@ while True:
 					    pass
 							#print('rsi {}'.format(rsi))
 							#print(e)
+          #skipping in case of bad metrics		
+					if data['RSI'] > 30:
+              print('skipping')
+              continue
+          print('not skipping rsi={}'.format(data['RSI']))
 					try:
 							var = get_quote('CCI', stock)
 							data['CCI'] = var['Technical Analysis: CCI'][valid_date]['CCI']
