@@ -90,84 +90,86 @@ def get_quote(func, symbol):
     db.requests.update({'id': 1}, {'status': 'stopped', 'id': 1, 'timestamp': time_now}, upsert=True)
     # print(result.json())
     try:
-		    return result.json()
+        return result.json()
     except:
         return False
 
-list = []
+
+list_ = []
 with open('stocks.txt') as f:
     for line in f:
-        list.append(line.partition('\t')[0])
-
+        list_.append(line.partition('\t')[0])
 
 
 while True:
-	bar = Bar('Processing', max=len(list))
-	valid_date = valid_date()
+    bar = Bar('Processing', max=len(list_))
+    valid_date = valid_date()
+    data = {}
+    for stock in list_:
+        data['symbol'] = stock
+        #print(stock)
+        try:
+            stock_info = [data_ for data_ in db.values.find({'symbol': stock})][0]
+            last_valid_date = stock_info['valid_date']
+            stock_info_size = len(stock_info)
+        except Exception as e:
+            last_valid_date = False
+            stock_info_size = 1
+            #print('update stock info, error = {}'.format(e))
+        if stock_info_size < 7:
+            last_valid_date = False
+        # request control
+        if last_valid_date == valid_date:
+            #print('{}, skip {}'.format(len(list) - count, stock))
+            bar.next()
+            pass
+        else:
+            data['query_date'] = today
+            data['valid_date'] = valid_date
+            rsi = get_quote('RSI', stock)
+            try:
+                #print(rsi)
+                data['RSI'] = rsi['Technical Analysis: RSI'][valid_date]['RSI']
+            except Exception as e:
+                # print('rsi {}'.format(rsi))
+                # print(e)
+                data['RSI'] = '9999'
+                pass
+            #print(data['RSI'])
+            #skipping in case of bad metrics
+            if float(data['RSI']) > 30:
+                data['CCI'] = 'skipping'
+                data['MACD_Signal'] = 'skipping'
+                data['MACD_Hist'] = 'skipping'
+                data['MACD'] = 'skipping'
+                db.values.update({'symbol': stock}, data, upsert=True)
+                bar.next()
+                continue
+            try:
+                var = get_quote('CCI', stock)
+                data['CCI'] = var['Technical Analysis: CCI'][valid_date]['CCI']
+            except Exception as e:
+                # print('cci')
+                # print(e)
+                pass
+            try:
+                var = get_quote('MACD', stock)
+                data['MACD_Hist'] = var['Technical Analysis: MACD'][valid_date]['MACD_Hist']
+                data['MACD_Signal'] = var['Technical Analysis: MACD'][valid_date]['MACD_Signal']
+                data['MACD'] = var['Technical Analysis: MACD'][valid_date]['MACD']
+            except Exception as e:
+                #print('macd')
+            	#print(e)
+                pass
+            #print(len(list) - count, data)
+            db.values.update({'symbol': stock}, data, upsert=True)
+            count += 1
+    bar.finish()
 	
-	data = {}
-	for stock in list:
-			data['symbol'] = stock
-			print(stock)
-			try:
-					stock_info = [data_ for data_ in db.values.find({'symbol': stock})][0]
-					last_valid_date = stock_info['valid_date']
-					stock_info_size = len(stock_info)
-			except Exception as e:
-					last_valid_date = False
-					stock_info_size = 1
-					#print('update stock info, error = {}'.format(e))
-			if stock_info_size < 9:
-					last_valid_date = False
-			# request control
-			if last_valid_date == valid_date:
-					#print('{}, skip {}'.format(len(list) - count, stock))
-					pass
-			else:
-					data['query_date'] = today
-					data['valid_date'] = valid_date
-					rsi = get_quote('RSI', stock)
-					try:
-							#print(rsi)
-							data['RSI'] = rsi['Technical Analysis: RSI'][valid_date]['RSI']
-					except Exception as e:
-					    pass
-							#print('rsi {}'.format(rsi))
-							#print(e)
-          #skipping in case of bad metrics		
-					if data['RSI'] > 30:
-              print('skipping')
-              continue
-          print('not skipping rsi={}'.format(data['RSI']))
-					try:
-							var = get_quote('CCI', stock)
-							data['CCI'] = var['Technical Analysis: CCI'][valid_date]['CCI']
-					except Exception as e:
-							pass
-							#print('cci')
-							#print(e)
-					try:
-							var = get_quote('MACD', stock)
-							data['MACD_Hist'] = var['Technical Analysis: MACD'][valid_date]['MACD_Hist']
-							data['MACD_Signal'] = var['Technical Analysis: MACD'][valid_date]['MACD_Signal']
-							data['MACD'] = var['Technical Analysis: MACD'][valid_date]['MACD']
-					except Exception as e:
-							pass
-							#print('macd')
-							#print(e)
-	
-					#print(len(list) - count, data)
-					db.values.update({'symbol': stock}, data, upsert=True)
-	
-			#bar.update(force_flush=True)
-			count += 1
-			bar.next()
-	bar.finish()
-	
-	end = time.time()
-	total_run = end - start
-	print('total run = {}'.format(total_run))
-	print('avg = {}'.format((total_run / count) / 3))
-	print(end)
-	time.sleep(60*60)
+    end = time.time()
+    total_run = end - start
+    print('total run = {}'.format(total_run))
+    print('avg = {}'.format((total_run / count) / 3))
+    print(end)
+    time.sleep(60*60)
 
