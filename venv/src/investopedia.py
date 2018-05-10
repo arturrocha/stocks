@@ -1,5 +1,5 @@
 from InvestopediaApi import ita
-from resources.config import *
+from resources.stocks_config.py import *
 
 
 client = ita.Account(investopedia_username, investopedia_password)

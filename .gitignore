@@ -1,6 +1,6 @@
 # config
 ######################
-venv/src/resources/config.py
+*stocks_config.py
 
 # Compiled source #
 ###################
