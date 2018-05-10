@@ -3,6 +3,7 @@ import time
 import pymongo
 import sys
 import requests
+from progress.bar import Bar
 
 
 client = pymongo.MongoClient('localhost', 27017)
@@ -60,15 +61,19 @@ for stock_values in collection:
         stock_values['RSI']
     except:
         continue
-    if stock_values['MACD'] > stock_values['MACD_Signal']:
-        if float(stock_values['CCI']) <= -100.0:
-            if float(stock_values['RSI']) <= 30:
-                stock_list.append(stock_values['symbol'])
-                #url = 'https://www.tradingview.com/chart/?symbol={}'.format(stock_values['symbol'])
-                #print(url)
-                #print(stock_values)
-                count += 1
+    try:
+        if stock_values['MACD'] > stock_values['MACD_Signal']:
+            if float(stock_values['CCI']) <= -100.0:
+                if float(stock_values['RSI']) <= 30:
+                    stock_list.append(stock_values['symbol'])
+                    #url = 'https://www.tradingview.com/chart/?symbol={}'.format(stock_values['symbol'])
+                    #print(url)
+                    #print(stock_values)
+                    count += 1
+    except:
+        pass
 
+bar = Bar('Processing', max=len(stock_list))
 for stock in stock_list:
     try:
         intraday = get_quote('TIME_SERIES_INTRADAY', stock)
@@ -97,7 +102,8 @@ for stock in stock_list:
         rsi0 = float(rsi['Technical Analysis: RSI'][key0]['RSI'])
         key1 = list(rsi['Technical Analysis: RSI'].keys())[1]
         rsi1 = float(rsi['Technical Analysis: RSI'][key1]['RSI'])
-        if rsi0 < 30:
+        bar.next()
+        if rsi0 < 35:
             print('stock={}, value avg={}, volume10%={}, product={}, RSI={}'.format(stock,
                                                                                     round(value, 2),
                                                                                     volume,
@@ -113,3 +119,4 @@ for stock in stock_list:
     except:
         print('fail')
         pass
+bar.finish()

@@ -22,7 +22,7 @@ time.sleep(0.2)
 count = 0
 api_key_code = 1
 
-def valid_date():
+def get_valid_date():
     # used to determine the proper latest valid date for quotes on alpha vantage
     global today
     global yesterday
@@ -44,6 +44,7 @@ def valid_date():
             friday = friday.strftime("%Y-%m-%d")
             valid_date = friday
     #print('today not ready, using {}'.format(valid_date))
+    print(valid_date)
     return valid_date
 
 
@@ -85,7 +86,10 @@ def get_quote(func, symbol):
         request_status = [info for info in db.requests.find({'id': 1})][0]
     time_now = time.time()
     db.requests.update({'id': 1}, {'status': 'running', 'id': 1, 'timestamp': time_now}, upsert=True)
-    result = requests.get('{0}function={1}&symbol={2}&{3}&apikey={4}'.format(site, func, symbol, middle, api_key))
+    try:
+        result = requests.get('{0}function={1}&symbol={2}&{3}&apikey={4}'.format(site, func, symbol, middle, api_key))
+    except:
+        pass
     time_now = time.time()
     db.requests.update({'id': 1}, {'status': 'stopped', 'id': 1, 'timestamp': time_now}, upsert=True)
     # print(result.json())
@@ -100,10 +104,12 @@ with open('stocks.txt') as f:
     for line in f:
         list_.append(line.partition('\t')[0])
 
+valid_date = False
 
 while True:
+    print('start')
     bar = Bar('Processing', max=len(list_))
-    valid_date = valid_date()
+    valid_date = get_valid_date()
     data = {}
     for stock in list_:
         data['symbol'] = stock
@@ -168,8 +174,13 @@ while True:
 	
     end = time.time()
     total_run = end - start
-    print('total run = {}'.format(total_run))
-    print('avg = {}'.format((total_run / count) / 3))
-    print(end)
-    time.sleep(60*60)
+    try:
+        print('total run = {}h'.format((total_run / 60) / 60))
+        print('avg = {}'.format((total_run / count) / 3))
+        print(end)
+    except:
+        pass
+    print('sleep')
+    valid_date = False
+    time.sleep(3600)
 

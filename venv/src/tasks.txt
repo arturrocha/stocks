@@ -1,4 +1,4 @@
-[] on get_stock() to speed the requests ignore stock if bad metrics seen
+[x] on get_stock() to speed the requests ignore stock if bad metrics seen
 [] add get_stock() to resource
 [] add check_valid_date() to resource
 [] add job queue for requests on AV
