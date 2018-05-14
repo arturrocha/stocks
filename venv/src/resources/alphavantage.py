@@ -15,7 +15,7 @@ def queue_jobs():
     pass
 
 
-def get_quote(func, symbol):
+def get_quote(func, symbol, priority=1):
     #queue_jobs()
     # function to request quote info from alpha vantage
     global av_api_key
@@ -28,6 +28,8 @@ def get_quote(func, symbol):
         middle = 'interval=daily&series_type=close&fastperiod=10'
     elif func is 'CCI':
         middle = 'interval=daily&time_period=20'
+    elif func is 'TIME_SERIES_INTRADAY':
+        middle = 'interval=15min'
     else:
         middle = ''
     # requests control
@@ -37,6 +39,15 @@ def get_quote(func, symbol):
     time_diff = time_now - time_last
     #print(request_status['status'])
     #time.sleep(1)
+    try:
+        if priority == 1:
+            if request_status['priority'] > 1:
+                time.sleep(2)
+            else:
+                pass
+    except:
+        pass
+
     if time_diff < 1:
         slt = 1.1 - time_diff
         time.sleep(slt)
@@ -46,7 +57,7 @@ def get_quote(func, symbol):
         time.sleep(0.2)
         request_status = [info for info in db.requests.find({'id': 1})][0]
     time_now = time.time()
-    db.requests.update({'id': 1}, {'status': 'running', 'id': 1, 'timestamp': time_now}, upsert=True)
+    db.requests.update({'id': 1}, {'status': 'running', 'id': 1, 'timestamp': time_now, 'priority': priority}, upsert=True)
     try:
         result = requests.get('{0}function={1}&symbol={2}&{3}&apikey={4}'.format(site, func, symbol, middle, av_api_key))
     except:
