@@ -1,10 +1,10 @@
-# U2ODY5RRZ9315QET
 import requests
 import datetime
 import time
 import pymongo
-from progress.bar import Bar
 import sys
+from progress.bar import Bar
+from resources.alphavantage import get_valid_date, get_quote
 
 # time settings
 start = time.time()
@@ -18,86 +18,6 @@ client = pymongo.MongoClient('localhost', 27017)
 db = client.stocks
 db.requests.update({'id': 1}, {'status': 'stopped', 'id': 1, 'timestamp': start}, upsert=True)
 time.sleep(0.2)
-# counters
-count = 0
-api_key_code = 1
-
-def get_valid_date():
-    # used to determine the proper latest valid date for quotes on alpha vantage
-    global today
-    global yesterday
-    try:
-        var = get_quote('RSI', 'A')
-        data = var['Technical Analysis: RSI'][today]['RSI']
-        valid_date = today
-    except KeyError:
-        valid_date = yesterday
-
-    if valid_date == yesterday:
-        wday = datetime.datetime.today().weekday()
-        if wday == 0:
-            friday = datetime.datetime.now() - datetime.timedelta(days=3)
-            friday = friday.strftime("%Y-%m-%d")
-            valid_date = friday
-        if wday == 7:
-            friday = datetime.datetime.now() - datetime.timedelta(days=2)
-            friday = friday.strftime("%Y-%m-%d")
-            valid_date = friday
-    #print('today not ready, using {}'.format(valid_date))
-    print(valid_date)
-    return valid_date
-
-
-def get_quote(func, symbol):
-    # function to request quote info from alpha vantage
-    global api_key_code
-    site = 'https://www.alphavantage.co/query?'
-    if func is 'TIME_SERIES_DAILY':
-        middle = ''
-    elif func is 'RSI':
-        middle = 'interval=daily&time_period=14&series_type=close'
-    elif func is 'MACD':
-        middle = 'interval=daily&series_type=close&fastperiod=10'
-    elif func is 'CCI':
-        middle = 'interval=daily&time_period=20'
-    else:
-        middle = ''
-    if api_key_code == 1:
-        api_key = 'U2ODY5RRZ9315QET'
-        api_key_code = 2
-    elif api_key_code == 2:
-        #api_key = 'GQTYHDDNWW6MQOLH'
-        api_key = 'U2ODY5RRZ9315QET'
-        api_key_code = 1
-    # requests control
-    request_status = [info for info in db.requests.find({'id': 1})][0]
-    time_last = request_status['timestamp']
-    time_now = time.time()
-    time_diff = time_now - time_last
-    #print(request_status['status'])
-    #time.sleep(1)
-    if time_diff < 1:
-        slt = 1.1 - time_diff
-        time.sleep(slt)
-        #print(time_diff, slt)
-    while request_status['status'] == 'running':
-        #print(request_status)
-        time.sleep(0.2)
-        request_status = [info for info in db.requests.find({'id': 1})][0]
-    time_now = time.time()
-    db.requests.update({'id': 1}, {'status': 'running', 'id': 1, 'timestamp': time_now}, upsert=True)
-    try:
-        result = requests.get('{0}function={1}&symbol={2}&{3}&apikey={4}'.format(site, func, symbol, middle, api_key))
-    except:
-        pass
-    time_now = time.time()
-    db.requests.update({'id': 1}, {'status': 'stopped', 'id': 1, 'timestamp': time_now}, upsert=True)
-    # print(result.json())
-    try:
-        return result.json()
-    except:
-        return False
-
 
 list_ = []
 with open('stocks.txt') as f:
@@ -113,7 +33,6 @@ while True:
     data = {}
     for stock in list_:
         data['symbol'] = stock
-        #print(stock)
         try:
             stock_info = [data_ for data_ in db.values.find({'symbol': stock})][0]
             last_valid_date = stock_info['valid_date']
@@ -121,12 +40,10 @@ while True:
         except Exception as e:
             last_valid_date = False
             stock_info_size = 1
-            #print('update stock info, error = {}'.format(e))
         if stock_info_size < 7:
             last_valid_date = False
         # request control
         if last_valid_date == valid_date:
-            #print('{}, skip {}'.format(len(list) - count, stock))
             bar.next()
             pass
         else:
@@ -143,7 +60,7 @@ while True:
                 pass
             #print(data['RSI'])
             #skipping in case of bad metrics
-            if float(data['RSI']) > 30:
+            if float(data['RSI']) > 35:
                 data['CCI'] = 'skipping'
                 data['MACD_Signal'] = 'skipping'
                 data['MACD_Hist'] = 'skipping'
@@ -164,23 +81,18 @@ while True:
                 data['MACD_Signal'] = var['Technical Analysis: MACD'][valid_date]['MACD_Signal']
                 data['MACD'] = var['Technical Analysis: MACD'][valid_date]['MACD']
             except Exception as e:
-                #print('macd')
-            	#print(e)
                 pass
-            #print(len(list) - count, data)
             db.values.update({'symbol': stock}, data, upsert=True)
-            count += 1
     bar.finish()
-	
+
     end = time.time()
     total_run = end - start
     try:
         print('total run = {}h'.format((total_run / 60) / 60))
-        print('avg = {}'.format((total_run / count) / 3))
         print(end)
     except:
         pass
-    print('sleep')
+    print('sleep for 1h')
     valid_date = False
     time.sleep(3600)
 
