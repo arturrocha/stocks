@@ -1,13 +1,10 @@
-import datetime
+from datetime import datetime, time
+# trade starts at 13:30 utc
+now = datetime.utcnow()
+now_time = now.time()
 
-today = datetime.datetime.now()
 
-print(today)
-
-today = today.strftime("%Y-%m-%d")
-
-print(today)
-
-yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).strftime("%Y-%m-%d")
-
-print(yesterday)
+if time(13,55) <= now.time() <= time(19,55):
+    print("yes, within the interval")
+else:
+    print('nono')

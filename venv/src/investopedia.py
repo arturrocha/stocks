@@ -31,8 +31,18 @@ print('start')
 
 #trade
 trade_stock('AMX', 1000)
+now = datetime.utcnow()
+now_time = now.time()
+
+# add weekdays
+if time(13,55) <= now.time() <= time(19,55):
+    print("Market open")
+else:
+    print('Market closed')
+
 print('end')
 
+#watchdog
 while True:
     try:
         bar.finish()
